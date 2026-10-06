@@ -22,6 +22,7 @@ public class FactoryTierMixin implements InitializableEnum {
     @Shadow @Final @Mutable
     private static FactoryTier[] $VALUES;
 
+
     @Invoker("<init>")
     public static FactoryTier evolvedmekanism$initInvoker(String internalName, int internalId, BaseTier baseTier, int processes) {
         throw new AssertionError();

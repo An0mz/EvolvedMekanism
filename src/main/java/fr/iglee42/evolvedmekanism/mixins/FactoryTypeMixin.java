@@ -5,6 +5,7 @@ import fr.iglee42.evolvedmekanism.EvolvedMekanismLang;
 import fr.iglee42.evolvedmekanism.registries.EMBlockTypes;
 import fr.iglee42.evolvedmekanism.registries.EMBlocks;
 import fr.iglee42.evolvedmekanism.registries.EMFactoryType;
+import mekanism.api.text.ILangEntry;
 import mekanism.common.MekanismLang;
 import mekanism.common.content.blocktype.FactoryType;
 import mekanism.common.content.blocktype.Machine;
@@ -28,7 +29,7 @@ public class FactoryTypeMixin {
     private static FactoryType[] $VALUES;
 
     @Invoker("<init>")
-    public static FactoryType evolvedmekanism$initInvoker(String internalName, int internalId, String registryNameComponent, MekanismLang langEntry, Supplier<Machine.FactoryMachine<?>> baseMachine, Supplier<BlockRegistryObject<?, ?>> baseBlock){
+    public static FactoryType evolvedmekanism$initInvoker(String internalName, int internalId, String registryNameComponent, ILangEntry langEntry, Supplier<Machine.FactoryMachine<?>> baseMachine, Supplier<BlockRegistryObject<?, ?>> baseBlock){
         throw new AssertionError();
     }
 

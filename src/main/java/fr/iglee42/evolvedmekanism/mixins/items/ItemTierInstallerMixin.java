@@ -68,7 +68,7 @@ public class ItemTierInstallerMixin {
             Block block = state.getBlock();
             AttributeUpgradeable upgradeableBlock = Attribute.get(block, AttributeUpgradeable.class);
             if (upgradeableBlock != null) {
-                BaseTier baseTier = Attribute.getBaseTier(block);
+                BaseTier baseTier = Attribute.getBaseTier(state.getBlockHolder());
                 boolean matchesFrom = (fromTier == null ? baseTier == null : (baseTier != null && baseTier.name().equals(fromTier.name())));
                 boolean differentTo = !(baseTier != null && toTier != null && baseTier.name().equals(toTier.name()));
                 if (matchesFrom && differentTo) {
@@ -82,7 +82,7 @@ public class ItemTierInstallerMixin {
                             cir.setReturnValue(InteractionResult.FAIL);
                             return;
                         }
-                        IUpgradeData upgradeData = tierUpgradable.getUpgradeData();
+                        IUpgradeData upgradeData = tierUpgradable.getUpgradeData(level.registryAccess());
                         if (upgradeData == null) {
                             if (tierUpgradable.canBeUpgraded()) {
                                 Mekanism.logger.warn("Got no upgrade data for block {} at position: {} in {} but it said it would be able to provide some.", block, pos, level);
@@ -99,7 +99,7 @@ public class ItemTierInstallerMixin {
                                     upgradedTile.setFacing(directional.getDirection());
                                 }
                                 try {
-                                    upgradedTile.parseUpgradeData(upgradeData);
+                                    upgradedTile.parseUpgradeData(level.registryAccess(), upgradeData);
                                 } catch (Throwable parseEx) {
                                     // Fallback: best-effort transfer of slot NBT data if parseUpgradeData fails
                                     try {
@@ -110,8 +110,8 @@ public class ItemTierInstallerMixin {
                                                 extraField.setAccessible(true);
                                                 Object targetExtra = extraField.get(upgradedTile);
                                                 if (targetExtra != null && allData.extraSlot != null) {
-                                                    java.lang.reflect.Method deserialize = targetExtra.getClass().getMethod("deserializeNBT", net.minecraft.nbt.Tag.class);
-                                                    deserialize.invoke(targetExtra, allData.extraSlot.serializeNBT());
+                                                    java.lang.reflect.Method deserialize = targetExtra.getClass().getMethod("deserializeNBT", net.minecraft.core.HolderLookup.Provider.class, net.minecraft.nbt.CompoundTag.class);
+                                                    deserialize.invoke(targetExtra, level.registryAccess(), allData.extraSlot.serializeNBT(level.registryAccess()));
                                                 }
                                             } catch (NoSuchFieldException ignored) {
                                             }
@@ -120,8 +120,8 @@ public class ItemTierInstallerMixin {
                                                 secondField.setAccessible(true);
                                                 Object targetSecond = secondField.get(upgradedTile);
                                                 if (targetSecond != null && allData.secondaryExtraSlot != null) {
-                                                    java.lang.reflect.Method deserialize2 = targetSecond.getClass().getMethod("deserializeNBT", net.minecraft.nbt.Tag.class);
-                                                    deserialize2.invoke(targetSecond, allData.secondaryExtraSlot.serializeNBT());
+                                                    java.lang.reflect.Method deserialize2 = targetSecond.getClass().getMethod("deserializeNBT", net.minecraft.core.HolderLookup.Provider.class, net.minecraft.nbt.CompoundTag.class);
+                                                    deserialize2.invoke(targetSecond, level.registryAccess(), allData.secondaryExtraSlot.serializeNBT(level.registryAccess()));
                                                 }
                                             } catch (NoSuchFieldException ignored) {
                                             }
