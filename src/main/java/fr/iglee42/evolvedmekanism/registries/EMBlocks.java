@@ -2,6 +2,7 @@ package fr.iglee42.evolvedmekanism.registries;
 
 import fr.iglee42.evolvedmekanism.EvolvedMekanism;
 import fr.iglee42.evolvedmekanism.blocks.EMBlockResource;
+import fr.iglee42.evolvedmekanism.interfaces.EMInputRecipeCache;
 import fr.iglee42.evolvedmekanism.items.EMItemBlockResource;
 import fr.iglee42.evolvedmekanism.multiblock.apt.TileEntityAPTCasing;
 import fr.iglee42.evolvedmekanism.multiblock.apt.TileEntityAPTPort;
@@ -11,6 +12,11 @@ import fr.iglee42.evolvedmekanism.tiles.TileEntitySuperchargingElementMk2;
 import fr.iglee42.evolvedmekanism.tiles.machine.TileEntityAlloyer;
 import fr.iglee42.evolvedmekanism.tiles.machine.TileEntityChemixer;
 import mekanism.api.tier.AlloyTier;
+import mekanism.common.attachments.component.AttachedEjector;
+import mekanism.common.attachments.component.AttachedSideConfig;
+import mekanism.common.attachments.containers.ContainerType;
+import mekanism.common.attachments.containers.chemical.ChemicalTanksBuilder;
+import mekanism.common.attachments.containers.item.ItemSlotsBuilder;
 import mekanism.common.block.BlockOre;
 import mekanism.common.block.interfaces.IHasDescription;
 import mekanism.common.block.prefab.BlockBasicMultiblock;
@@ -21,10 +27,10 @@ import mekanism.common.block.transmitter.*;
 import mekanism.common.content.blocktype.BlockTypeTile;
 import mekanism.common.content.blocktype.Machine;
 import mekanism.common.item.block.*;
-import mekanism.common.item.block.machine.ItemBlockMachine;
 import mekanism.common.item.block.transmitter.*;
 import mekanism.common.registration.impl.BlockDeferredRegister;
 import mekanism.common.registration.impl.BlockRegistryObject;
+import mekanism.common.registries.MekanismDataComponents;
 import mekanism.common.resource.BlockResourceInfo;
 import mekanism.common.resource.ore.OreType;
 import mekanism.common.tier.*;
@@ -42,7 +48,19 @@ import java.util.function.Supplier;
 public class EMBlocks {
     public static final BlockDeferredRegister BLOCKS = new BlockDeferredRegister(EvolvedMekanism.MODID);
 
-    public static final BlockRegistryObject<BlockFactoryMachine<TileEntityAlloyer, Machine.FactoryMachine<TileEntityAlloyer>>, ItemBlockMachine> ALLOYER = BLOCKS.register("alloyer", () -> new BlockFactoryMachine<>(EMBlockTypes.ALLOYER, properties -> properties.mapColor(BlockResourceInfo.STEEL.getMapColor())), ItemBlockMachine::new);
+    public static final BlockRegistryObject<BlockFactoryMachine<TileEntityAlloyer, Machine.FactoryMachine<TileEntityAlloyer>>, ItemBlockTooltip<BlockFactoryMachine<TileEntityAlloyer, Machine.FactoryMachine<TileEntityAlloyer>>>> ALLOYER = BLOCKS.register("alloyer", () -> new BlockFactoryMachine<>(EMBlockTypes.ALLOYER, properties -> properties.mapColor(BlockResourceInfo.STEEL.getMapColor())),
+            (block, properties) -> new ItemBlockTooltip<>(block, true, properties
+                    .component(MekanismDataComponents.EJECTOR, AttachedEjector.DEFAULT)
+                    .component(MekanismDataComponents.SIDE_CONFIG, AttachedSideConfig.EXTRA_MACHINE)
+            )
+    ).forItemHolder(holder -> holder.addAttachmentOnlyContainers(ContainerType.ITEM, () -> ItemSlotsBuilder.builder()
+            .addInput(EMRecipeType.ALLOYING, EMInputRecipeCache.TripleItem::containsInputA)
+            .addInput(EMRecipeType.ALLOYING, EMInputRecipeCache.TripleItem::containsInputB)
+            .addInput(EMRecipeType.ALLOYING, EMInputRecipeCache.TripleItem::containsInputC)
+            .addOutput()
+            .addEnergy()
+            .build()
+    ));
 
     static {
         registerOre(OreType.URANIUM);
@@ -52,7 +70,23 @@ public class EMBlocks {
     public static final BlockRegistryObject<BlockTile<TileEntitySuperchargingElement, BlockTypeTile<TileEntitySuperchargingElement>>, ItemBlockTooltip<BlockTile<TileEntitySuperchargingElement, BlockTypeTile<TileEntitySuperchargingElement>>>> SUPERCHARGING_ELEMENT = registerBlock("supercharging_element", () -> new BlockTile<>(EMBlockTypes.SUPERCHARGING_ELEMENT, properties -> properties.mapColor(MapColor.COLOR_MAGENTA)));
     public static final BlockRegistryObject<BlockTile<TileEntitySuperchargingElementMk2, BlockTypeTile<TileEntitySuperchargingElementMk2>>, ItemBlockTooltip<BlockTile<TileEntitySuperchargingElementMk2, BlockTypeTile<TileEntitySuperchargingElementMk2>>>> SUPERCHARGING_ELEMENT_MK2 = registerBlock("supercharging_element_mk2", () -> new BlockTile<>(EMBlockTypes.SUPERCHARGING_ELEMENT_MK2, properties -> properties.mapColor(MapColor.COLOR_MAGENTA)));
 
-    public static final BlockRegistryObject<BlockTileModel<TileEntityChemixer, Machine<TileEntityChemixer>>, ItemBlockMachine> CHEMIXER = BLOCKS.register("chemixer", () -> new BlockTileModel<>(EMBlockTypes.CHEMIXER, properties -> properties.mapColor(BlockResourceInfo.STEEL.getMapColor())), ItemBlockMachine::new);
+    public static final BlockRegistryObject<BlockTileModel<TileEntityChemixer, Machine<TileEntityChemixer>>, ItemBlockTooltip<BlockTileModel<TileEntityChemixer, Machine<TileEntityChemixer>>>> CHEMIXER = BLOCKS.register("chemixer", () -> new BlockTileModel<>(EMBlockTypes.CHEMIXER, properties -> properties.mapColor(BlockResourceInfo.STEEL.getMapColor())),
+            (block, properties) -> new ItemBlockTooltip<>(block, true, properties
+                    .component(MekanismDataComponents.EJECTOR, AttachedEjector.DEFAULT)
+                    .component(MekanismDataComponents.SIDE_CONFIG, AttachedSideConfig.ADVANCED_MACHINE_INPUT_ONLY)
+            )
+    ).forItemHolder(holder -> holder
+            .addAttachmentOnlyContainers(ContainerType.ITEM, () -> ItemSlotsBuilder.builder()
+                    .addInput(EMRecipeType.CHEMIXING, EMInputRecipeCache.ItemItemChemical::containsInputA)
+                    .addInput(EMRecipeType.CHEMIXING, EMInputRecipeCache.ItemItemChemical::containsInputB)
+                    .addOutput()
+                    .addEnergy()
+                    .build()
+            ).addAttachmentOnlyContainers(ContainerType.CHEMICAL, () -> ChemicalTanksBuilder.builder()
+                    .addBasic(TileEntityChemixer.MAX_GAS, EMRecipeType.CHEMIXING, EMInputRecipeCache.ItemItemChemical::containsInputC)
+                    .build()
+            )
+    );
 
     public static final BlockRegistryObject<EMBlockResource, EMItemBlockResource> BETTER_GOLD_BLOCK = registerResourceBlock(EMBlockResourceInfo.BETTER_GOLD);
     public static final BlockRegistryObject<EMBlockResource, EMItemBlockResource> PLASLITHERITE_BLOCK = registerResourceBlock(EMBlockResourceInfo.PLASLITHERITE);
@@ -69,29 +103,29 @@ public class EMBlocks {
 
     private static void registerOre(OreType ore) {
         String name = ore.getResource().getRegistrySuffix() + "_ore";
-        BlockRegistryObject<BlockOre, ItemBlockTooltip<BlockOre>> nether = registerBlock("netherrack_"+name, () -> new BlockOre(ore,BlockBehaviour.Properties.copy(Blocks.NETHERRACK)));
+        BlockRegistryObject<BlockOre, ItemBlockTooltip<BlockOre>> nether = registerBlock("netherrack_"+name, () -> new BlockOre(ore,BlockBehaviour.Properties.ofFullCopy(Blocks.NETHERRACK)));
         BlockRegistryObject<BlockOre, ItemBlockTooltip<BlockOre>> endStone = registerBlock("end_stone_" + name,
-                () -> new BlockOre(ore, BlockBehaviour.Properties.copy(Blocks.END_STONE)));
+                () -> new BlockOre(ore, BlockBehaviour.Properties.ofFullCopy(Blocks.END_STONE)));
     }
 
     private static <BLOCK extends Block & IHasDescription> BlockRegistryObject<BLOCK, ItemBlockTooltip<BLOCK>> registerBlock(String name,
                                                                                                                              Supplier<? extends BLOCK> blockSupplier) {
-        return BLOCKS.registerDefaultProperties(name, blockSupplier, ItemBlockTooltip::new);
+        return BLOCKS.register(name, blockSupplier, ItemBlockTooltip::new);
     }
 
     private static <BLOCK extends Block & IHasDescription> BlockRegistryObject<BLOCK, ItemBlockTooltip<BLOCK>> registerBlock(String name,
                                                                                                                              Supplier<? extends BLOCK> blockSupplier, @SuppressWarnings("SameParameterValue") Rarity rarity) {
-        return BLOCKS.registerDefaultProperties(name, blockSupplier, (block, props) -> new ItemBlockTooltip<>(block, props.rarity(rarity)));
+        return BLOCKS.register(name, blockSupplier, (block, props) -> new ItemBlockTooltip<>(block, props.rarity(rarity)));
     }
 
 
     private static BlockRegistryObject<Block, BlockItem> registerAlloyBlock(AlloyTier tier) {
-        return BLOCKS.register("block_alloy_"+tier.getName(), ()->new Block(BlockBehaviour.Properties.of().strength(5,9)), b->new BlockItem(b,new Item.Properties()));
+        return BLOCKS.register("block_alloy_"+tier.getName(), ()->new Block(BlockBehaviour.Properties.of().strength(5,9)), BlockItem::new);
     }
 
 
     private static BlockRegistryObject<EMBlockResource, EMItemBlockResource> registerResourceBlock(EMBlockResourceInfo resource) {
-        return BLOCKS.registerDefaultProperties("block_" + resource.getRegistrySuffix(), () -> new EMBlockResource(resource), (block, properties) -> {
+        return BLOCKS.register("block_" + resource.getRegistrySuffix(), () -> new EMBlockResource(resource), (block, properties) -> {
             if (!block.getResourceInfo().burnsInFire()) {
                 properties = properties.fireResistant();
             }

@@ -16,6 +16,7 @@ import mekanism.common.content.blocktype.BlockTypeTile;
 import mekanism.common.content.blocktype.BlockTypeTile.BlockTileBuilder;
 import mekanism.common.content.blocktype.Machine;
 import mekanism.common.content.blocktype.Machine.MachineBuilder;
+import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.registries.MekanismSounds;
 
 import java.util.EnumSet;
@@ -29,6 +30,7 @@ public class EMBlockTypes {
             .withEnergyConfig(MekanismConfig.usage.combiner, MekanismConfig.storage.combiner)
             //Factories copy this set, so the creative upgrade also works in basic -> ultimate alloying factories
             .withSupportedUpgrades(EMUpgrades.withCreative(EnumSet.of(Upgrade.SPEED, Upgrade.ENERGY, Upgrade.MUFFLING)))
+            .withSideConfig(TransmissionType.ITEM, TransmissionType.ENERGY)
             .build();
 
     public static final Machine<TileEntityChemixer> CHEMIXER = MachineBuilder
@@ -36,7 +38,8 @@ public class EMBlockTypes {
             .withGui(() -> EMContainerTypes.CHEMIXER)
             .withSound(MekanismSounds.PRESSURIZED_REACTION_CHAMBER)
             .withEnergyConfig(MekanismConfig.usage.combiner, MekanismConfig.storage.combiner)
-            .withSupportedUpgrades(EnumSet.of(Upgrade.SPEED, Upgrade.ENERGY, Upgrade.MUFFLING))
+            .withSupportedUpgrades(Upgrade.SPEED, Upgrade.ENERGY, Upgrade.MUFFLING)
+            .withSideConfig(TransmissionType.ITEM, TransmissionType.CHEMICAL, TransmissionType.ENERGY)
             .withComputerSupport("chemixer")
             .build();
 

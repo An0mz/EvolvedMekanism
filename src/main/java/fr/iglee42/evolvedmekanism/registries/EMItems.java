@@ -50,7 +50,7 @@ public class EMItems {
 
 
     private static ItemRegistryObject<Item> registerCircuit(BaseTier tier) {
-        return ITEMS.register(tier.getLowerName() + "_control_circuit", properties -> new Item(properties) {
+        return ITEMS.registerItem(tier.getLowerName() + "_control_circuit", properties -> new Item(properties) {
             @NotNull
             @Override
             public Component getName(@NotNull ItemStack stack) {
@@ -60,7 +60,7 @@ public class EMItems {
     }
 
     private static ItemRegistryObject<ItemAlloy> registerAlloy(AlloyTier tier) {
-        return ITEMS.register("alloy_" + tier.getName(), properties -> new ItemAlloy(tier, properties) {
+        return ITEMS.registerItem("alloy_" + tier.getName(), properties -> new ItemAlloy(tier, properties) {
             @NotNull
             @Override
             public Component getName(@NotNull ItemStack stack) {

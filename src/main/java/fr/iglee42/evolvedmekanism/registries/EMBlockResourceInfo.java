@@ -9,8 +9,8 @@ import org.jetbrains.annotations.Nullable;
 
 public enum EMBlockResourceInfo implements IResource {
     BETTER_GOLD("better_gold", 5, 9, MapColor.COLOR_YELLOW),
-    PLASLITHERITE("plaslitherite", 25, 2_400, MapColor.SNOW, NoteBlockInstrument.BASEDRUM, -1, 0, false,false,PushReaction.NORMAL),
-    REFINED_REDSTONE("refined_redstone", 5, 6, MapColor.COLOR_RED, NoteBlockInstrument.BASEDRUM, -1, 15);
+    PLASLITHERITE("plaslitherite", 25, 2_400, MapColor.SNOW, NoteBlockInstrument.BASEDRUM, 0, 0, false,false,PushReaction.NORMAL),
+    REFINED_REDSTONE("refined_redstone", 5, 6, MapColor.COLOR_RED, NoteBlockInstrument.BASEDRUM, 0, 15);
 
     private final String registrySuffix;
     private final MapColor mapColor;
@@ -29,7 +29,7 @@ public enum EMBlockResourceInfo implements IResource {
     }
 
     EMBlockResourceInfo(String registrySuffix, float hardness, float resistance, MapColor mapColor, @Nullable NoteBlockInstrument instrument) {
-        this(registrySuffix, hardness, resistance, mapColor, instrument, -1);
+        this(registrySuffix, hardness, resistance, mapColor, instrument, 0);
     }
 
     EMBlockResourceInfo(String registrySuffix, float hardness, float resistance, MapColor mapColor, @Nullable NoteBlockInstrument instrument, int burnTime) {

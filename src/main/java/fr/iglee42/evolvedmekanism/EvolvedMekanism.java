@@ -23,12 +23,10 @@ import mekanism.common.registries.MekanismItems;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 @SuppressWarnings("unused")
 @Mod(EvolvedMekanism.MODID)
@@ -46,14 +44,13 @@ public class EvolvedMekanism {
     public static final MultiblockManager<APTMultiblockData> aptManager = new MultiblockManager<>("apt", APTCache::new,
             APTValidator::new);
 
-    @SuppressWarnings("removal")
-    public EvolvedMekanism() {
+    public EvolvedMekanism(IEventBus modEventBus, ModContainer modContainer) {
         instance = this;
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        EMConfig.registerConfigs(FMLJavaModLoadingContext.get());
+        EMConfig.registerConfigs(modContainer);
 
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(EMConfig::onConfigLoad);
 
         initEnums();
 
@@ -67,10 +64,8 @@ public class EvolvedMekanism {
 
         EMParticleTypes.PARTICLES.register(modEventBus);
 
-        MinecraftForge.EVENT_BUS.register(this);
-
-        versionNumber = new Version(ModLoadingContext.get().getActiveContainer());
-        packetHandler = new EMPacketHandler();
+        versionNumber = new Version(modContainer);
+        packetHandler = new EMPacketHandler(modEventBus);
     }
 
     public static EMPacketHandler packetHandler() {
@@ -85,7 +80,6 @@ public class EvolvedMekanism {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        packetHandler.initialize();
         event.enqueueWork(() -> {
             EMTags.init();
             BuildCommand.register("apt", EvolvedMekanismLang.APT, new EMBuilders.APTBuilder());
