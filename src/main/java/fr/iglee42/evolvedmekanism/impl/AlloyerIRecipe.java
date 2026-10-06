@@ -5,12 +5,7 @@ import fr.iglee42.evolvedmekanism.registries.EMBlocks;
 import fr.iglee42.evolvedmekanism.registries.EMRecipeSerializers;
 import fr.iglee42.evolvedmekanism.registries.EMRecipeType;
 import mekanism.api.annotations.NothingNullByDefault;
-import mekanism.api.recipes.CombinerRecipe;
 import mekanism.api.recipes.ingredients.ItemStackIngredient;
-import mekanism.common.recipe.MekanismRecipeType;
-import mekanism.common.registries.MekanismBlocks;
-import mekanism.common.registries.MekanismRecipeSerializers;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -18,8 +13,8 @@ import net.minecraft.world.item.crafting.RecipeType;
 @NothingNullByDefault
 public class AlloyerIRecipe extends AlloyerRecipe {
 
-    public AlloyerIRecipe(ResourceLocation id, ItemStackIngredient mainInput, ItemStackIngredient extraInput, ItemStackIngredient secondExtraInput, ItemStack output) {
-        super(id, mainInput, extraInput,secondExtraInput, output);
+    public AlloyerIRecipe(ItemStackIngredient mainInput, ItemStackIngredient extraInput, ItemStackIngredient secondExtraInput, ItemStack output) {
+        super(mainInput, extraInput,secondExtraInput, output);
     }
 
     @Override
@@ -28,7 +23,7 @@ public class AlloyerIRecipe extends AlloyerRecipe {
     }
 
     @Override
-    public RecipeSerializer<AlloyerRecipe> getSerializer() {
+    public RecipeSerializer<AlloyerIRecipe> getSerializer() {
         return EMRecipeSerializers.ALLOYER.get();
     }
 
@@ -39,6 +34,6 @@ public class AlloyerIRecipe extends AlloyerRecipe {
 
     @Override
     public ItemStack getToastSymbol() {
-        return EMBlocks.ALLOYER.getItemStack();
+        return new ItemStack(EMBlocks.ALLOYER);
     }
 }

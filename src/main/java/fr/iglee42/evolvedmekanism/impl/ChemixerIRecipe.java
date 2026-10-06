@@ -7,7 +7,6 @@ import fr.iglee42.evolvedmekanism.registries.EMRecipeType;
 import mekanism.api.annotations.NothingNullByDefault;
 import mekanism.api.recipes.ingredients.ChemicalStackIngredient;
 import mekanism.api.recipes.ingredients.ItemStackIngredient;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -15,8 +14,8 @@ import net.minecraft.world.item.crafting.RecipeType;
 @NothingNullByDefault
 public class ChemixerIRecipe extends ChemixerRecipe {
 
-    public ChemixerIRecipe(ResourceLocation id, ItemStackIngredient mainInput, ItemStackIngredient extraInput, ChemicalStackIngredient.GasStackIngredient gasInput, ItemStack output) {
-        super(id, mainInput, extraInput,gasInput, output);
+    public ChemixerIRecipe(ItemStackIngredient mainInput, ItemStackIngredient extraInput, ChemicalStackIngredient gasInput, ItemStack output) {
+        super(mainInput, extraInput,gasInput, output);
     }
 
     @Override
@@ -25,7 +24,7 @@ public class ChemixerIRecipe extends ChemixerRecipe {
     }
 
     @Override
-    public RecipeSerializer<ChemixerRecipe> getSerializer() {
+    public RecipeSerializer<ChemixerIRecipe> getSerializer() {
         return EMRecipeSerializers.CHEMIXER.get();
     }
 
@@ -36,6 +35,6 @@ public class ChemixerIRecipe extends ChemixerRecipe {
 
     @Override
     public ItemStack getToastSymbol() {
-        return EMBlocks.ALLOYER.getItemStack();
+        return new ItemStack(EMBlocks.ALLOYER);
     }
 }

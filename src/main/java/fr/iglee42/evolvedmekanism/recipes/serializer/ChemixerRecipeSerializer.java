@@ -1,76 +1,48 @@
 package fr.iglee42.evolvedmekanism.recipes.serializer;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
+import com.mojang.datafixers.util.Function4;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.iglee42.evolvedmekanism.recipes.ChemixerRecipe;
-import mekanism.api.JsonConstants;
-import mekanism.api.SerializerHelper;
-import mekanism.api.recipes.ingredients.ChemicalStackIngredient.GasStackIngredient;
+import mekanism.api.SerializationConstants;
+import mekanism.api.recipes.ingredients.ChemicalStackIngredient;
 import mekanism.api.recipes.ingredients.ItemStackIngredient;
-import mekanism.api.recipes.ingredients.creator.IngredientCreatorAccess;
-import mekanism.common.Mekanism;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import org.jetbrains.annotations.NotNull;
 
 public class ChemixerRecipeSerializer<RECIPE extends ChemixerRecipe> implements RecipeSerializer<RECIPE> {
 
-    private final IFactory<RECIPE> factory;
+    private final MapCodec<RECIPE> codec;
+    private final StreamCodec<RegistryFriendlyByteBuf, RECIPE> streamCodec;
 
-    public ChemixerRecipeSerializer(IFactory<RECIPE> factory) {
-        this.factory = factory;
+    public ChemixerRecipeSerializer(Function4<ItemStackIngredient, ItemStackIngredient, ChemicalStackIngredient, ItemStack, RECIPE> factory) {
+        this.codec = RecordCodecBuilder.mapCodec(instance -> instance.group(
+                ItemStackIngredient.CODEC.fieldOf(SerializationConstants.MAIN_INPUT).forGetter(ChemixerRecipe::getInputMain),
+                ItemStackIngredient.CODEC.fieldOf(SerializationConstants.EXTRA_INPUT).forGetter(ChemixerRecipe::getInputExtra),
+                ChemicalStackIngredient.CODEC.fieldOf(SerializationConstants.CHEMICAL_INPUT).forGetter(ChemixerRecipe::getInputGas),
+                ItemStack.CODEC.fieldOf(SerializationConstants.OUTPUT).forGetter(ChemixerRecipe::getOutputRaw)
+        ).apply(instance, factory));
+        this.streamCodec = StreamCodec.composite(
+                ItemStackIngredient.STREAM_CODEC, ChemixerRecipe::getInputMain,
+                ItemStackIngredient.STREAM_CODEC, ChemixerRecipe::getInputExtra,
+                ChemicalStackIngredient.STREAM_CODEC, ChemixerRecipe::getInputGas,
+                ItemStack.STREAM_CODEC, ChemixerRecipe::getOutputRaw,
+                factory
+        );
     }
 
     @NotNull
     @Override
-    public RECIPE fromJson(@NotNull ResourceLocation recipeId, @NotNull JsonObject json) {
-        JsonElement itemInput = GsonHelper.isArrayNode(json, JsonConstants.MAIN_INPUT) ? GsonHelper.getAsJsonArray(json, JsonConstants.MAIN_INPUT) :
-                GsonHelper.getAsJsonObject(json, JsonConstants.MAIN_INPUT);
-        ItemStackIngredient solidIngredient = IngredientCreatorAccess.item().deserialize(itemInput);
-        JsonElement extraInput = GsonHelper.isArrayNode(json, JsonConstants.EXTRA_INPUT) ? GsonHelper.getAsJsonArray(json, JsonConstants.EXTRA_INPUT) :
-                GsonHelper.getAsJsonObject(json, JsonConstants.EXTRA_INPUT);
-        ItemStackIngredient extraIngredient = IngredientCreatorAccess.item().deserialize(extraInput);
-        JsonElement gasInput = GsonHelper.isArrayNode(json, JsonConstants.GAS_INPUT) ? GsonHelper.getAsJsonArray(json, JsonConstants.GAS_INPUT) :
-                GsonHelper.getAsJsonObject(json, JsonConstants.GAS_INPUT);
-        GasStackIngredient gasIngredient = IngredientCreatorAccess.gas().deserialize(gasInput);
-        ItemStack output = SerializerHelper.getItemStack(json, JsonConstants.OUTPUT);
-        if (output.isEmpty()) {
-            throw new JsonSyntaxException("Chemixer recipe output must not be empty.");
-        }
-        return this.factory.create(recipeId, solidIngredient, extraIngredient, gasIngredient, output);
+    public MapCodec<RECIPE> codec() {
+        return codec;
     }
 
+    @NotNull
     @Override
-    public RECIPE fromNetwork(@NotNull ResourceLocation recipeId, @NotNull FriendlyByteBuf buffer) {
-        try {
-            ItemStackIngredient inputSolid = IngredientCreatorAccess.item().read(buffer);
-            ItemStackIngredient inputExtra = IngredientCreatorAccess.item().read(buffer);
-            GasStackIngredient inputGas = IngredientCreatorAccess.gas().read(buffer);
-            ItemStack outputItem = buffer.readItem();
-            return this.factory.create(recipeId, inputSolid, inputExtra, inputGas, outputItem);
-        } catch (Exception e) {
-            Mekanism.logger.error("Error reading chemixer recipe from packet.", e);
-            throw e;
-        }
-    }
-
-    @Override
-    public void toNetwork(@NotNull FriendlyByteBuf buffer, @NotNull RECIPE recipe) {
-        try {
-            recipe.write(buffer);
-        } catch (Exception e) {
-            Mekanism.logger.error("Error writing chemixer recipe to packet.", e);
-            throw e;
-        }
-    }
-
-    @FunctionalInterface
-    public interface IFactory<RECIPE extends ChemixerRecipe> {
-
-        RECIPE create(ResourceLocation id, ItemStackIngredient mainInput, ItemStackIngredient extraInput, GasStackIngredient gasInput, ItemStack outputItem);
+    public StreamCodec<RegistryFriendlyByteBuf, RECIPE> streamCodec() {
+        return streamCodec;
     }
 }

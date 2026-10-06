@@ -14,16 +14,21 @@ import mekanism.api.recipes.ingredients.InputIngredient;
 import mekanism.api.recipes.inputs.IInputHandler;
 import mekanism.api.recipes.outputs.IOutputHandler;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.util.TriPredicate;
+import net.neoforged.neoforge.common.util.TriPredicate;
 import org.apache.commons.lang3.function.TriFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Base class to help implement handling of recipes with two inputs.
  */
 @NothingNullByDefault
-public class ThreeInputCachedRecipe<INPUT_A, INPUT_B, INPUT_C, OUTPUT, RECIPE extends MekanismRecipe & TriPredicate<INPUT_A, INPUT_B, INPUT_C>> extends CachedRecipe<RECIPE> {
+public class ThreeInputCachedRecipe<INPUT_A, INPUT_B, INPUT_C, OUTPUT, RECIPE extends MekanismRecipe<?> & TriPredicate<INPUT_A, INPUT_B, INPUT_C>> extends CachedRecipe<RECIPE> {
 
     private final IInputHandler<INPUT_A> inputHandler;
     private final IInputHandler<INPUT_B> secondaryInputHandler;
