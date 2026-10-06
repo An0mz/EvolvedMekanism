@@ -1,27 +1,25 @@
 package fr.iglee42.evolvedmekanism.tiles.machine;
 
-import java.util.List;
-
 import fr.iglee42.evolvedmekanism.interfaces.ChemixerCachedRecipe;
 import fr.iglee42.evolvedmekanism.interfaces.EMInputRecipeCache;
+import fr.iglee42.evolvedmekanism.jei.JEIRecipeTypes;
 import fr.iglee42.evolvedmekanism.recipes.ChemixerRecipe;
+import fr.iglee42.evolvedmekanism.recipes.vanilla_input.BiItemChemicalRecipeInput;
 import fr.iglee42.evolvedmekanism.registries.EMBlocks;
 import fr.iglee42.evolvedmekanism.registries.EMRecipeType;
 import mekanism.api.AutomationType;
 import mekanism.api.IContentsListener;
-import mekanism.api.chemical.ChemicalTankBuilder;
+import mekanism.api.chemical.BasicChemicalTank;
+import mekanism.api.chemical.ChemicalStack;
+import mekanism.api.chemical.IChemicalTank;
 import mekanism.api.chemical.attribute.ChemicalAttributeValidator;
-import mekanism.api.chemical.gas.Gas;
-import mekanism.api.chemical.gas.GasStack;
-import mekanism.api.chemical.gas.IGasTank;
-import mekanism.api.chemical.gas.attribute.GasAttributes;
-import mekanism.api.math.FloatingLong;
 import mekanism.api.recipes.cache.CachedRecipe;
 import mekanism.api.recipes.cache.CachedRecipe.OperationTracker.RecipeError;
 import mekanism.api.recipes.inputs.IInputHandler;
 import mekanism.api.recipes.inputs.InputHelper;
 import mekanism.api.recipes.outputs.IOutputHandler;
 import mekanism.api.recipes.outputs.OutputHelper;
+import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import mekanism.common.capabilities.energy.MachineEnergyContainer;
 import mekanism.common.capabilities.holder.chemical.ChemicalTankHelper;
 import mekanism.common.capabilities.holder.chemical.IChemicalTankHolder;
@@ -41,19 +39,18 @@ import mekanism.common.inventory.warning.WarningTracker.WarningType;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.recipe.IMekanismRecipeTypeProvider;
 import mekanism.common.recipe.lookup.ITripleRecipeLookupHandler;
-import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.prefab.TileEntityProgressMachine;
-import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe> implements
-        ITripleRecipeLookupHandler.ObjectObjectChemicalRecipeLookupHandler<ItemStack,ItemStack,Gas, GasStack, ChemixerRecipe, EMInputRecipeCache.ItemItemChemical<Gas,GasStack,ChemixerRecipe>> {
+        ITripleRecipeLookupHandler<ItemStack,ItemStack,ChemicalStack, ChemixerRecipe, EMInputRecipeCache.ItemItemChemical<ChemixerRecipe>> {
 
     public static final RecipeError NOT_ENOUGH_ITEM_INPUT_ERROR = RecipeError.create();
     public static final RecipeError NOT_ENOUGH_SECONDARY_INPUT = RecipeError.create();
@@ -68,15 +65,15 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
             RecipeError.INPUT_DOESNT_PRODUCE_OUTPUT
     );
     private static final int BASE_DURATION = 100;
-    private static final long MAX_GAS = 10_000;
+    public static final long MAX_GAS = 10_000;
 
     @WrappingComputerMethod(wrapper = ComputerChemicalTankWrapper.class, methodNames = {"getInputGas", "getInputGasCapacity", "getInputGasNeeded",
             "getInputGasFilledPercentage"}, docPlaceholder = "gas input")
-    public IGasTank inputGasTank;
+    public IChemicalTank inputGasTank;
     private final IOutputHandler<@NotNull ItemStack> outputHandler;
     private final IInputHandler<@NotNull ItemStack> itemInputHandler;
     private final IInputHandler<@NotNull ItemStack> extraInputHandler;
-    private final IInputHandler<@NotNull GasStack> gasInputHandler;
+    private final IInputHandler<@NotNull ChemicalStack> gasInputHandler;
 
     private MachineEnergyContainer<TileEntityChemixer> energyContainer;
     @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getInputItem", docPlaceholder = "item input slot")
@@ -90,14 +87,13 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
 
     public TileEntityChemixer(BlockPos pos, BlockState state) {
         super(EMBlocks.CHEMIXER, pos, state, TRACKED_ERROR_TYPES, BASE_DURATION);
-        configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY, TransmissionType.GAS);
         configComponent.setupItemIOExtraConfig(mainInputSlot, outputSlot,extraInputSlot, energySlot);
-        configComponent.setupInputConfig(TransmissionType.GAS, inputGasTank);
+        configComponent.setupInputConfig(TransmissionType.CHEMICAL, inputGasTank);
         configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
 
         ejectorComponent = new TileComponentEjector(this);
-        ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM, TransmissionType.GAS)
-                .setCanTankEject(tank -> tank != inputGasTank);
+        ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM, TransmissionType.CHEMICAL)
+              .setCanTankEject(tank -> tank != inputGasTank);
 
         itemInputHandler = InputHelper.getInputHandler(mainInputSlot, NOT_ENOUGH_ITEM_INPUT_ERROR);
         extraInputHandler = InputHelper.getInputHandler(extraInputSlot, RecipeError.NOT_ENOUGH_SECONDARY_INPUT);
@@ -107,10 +103,10 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
 
     @NotNull
     @Override
-    public IChemicalTankHolder<Gas, GasStack, IGasTank> getInitialGasTanks(IContentsListener listener, IContentsListener recipeCacheListener) {
-        ChemicalTankHelper<Gas, GasStack, IGasTank> builder = ChemicalTankHelper.forSideGasWithConfig(this::getDirection, this::getConfig);
+    public IChemicalTankHolder getInitialChemicalTanks(IContentsListener listener, IContentsListener recipeCacheListener,IContentsListener unpause) {
+        ChemicalTankHelper builder = ChemicalTankHelper.forSideWithConfig(this);
         //Allow extracting out of the input gas tank if it isn't external OR the output tank is empty AND the input is radioactive
-        builder.addTank(inputGasTank = ChemicalTankBuilder.GAS.create(MAX_GAS, (gas,type)->type != AutomationType.EXTERNAL,
+        builder.addTank(inputGasTank = BasicChemicalTank.createModern(MAX_GAS, (gas,type)->type != AutomationType.EXTERNAL,
                 (gas, automationType) ->{
                     return containsRecipeCAB(mainInputSlot.getStack(), extraInputSlot.getStack(), gas);
                 }, this::containsRecipeC,
@@ -121,23 +117,23 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
 
     @NotNull
     @Override
-    protected IEnergyContainerHolder getInitialEnergyContainers(IContentsListener listener, IContentsListener recipeCacheListener) {
-        EnergyContainerHelper builder = EnergyContainerHelper.forSideWithConfig(this::getDirection, this::getConfig);
-        builder.addContainer(energyContainer = MachineEnergyContainer.input(this, listener));
+    protected IEnergyContainerHolder getInitialEnergyContainers(IContentsListener listener, IContentsListener recipeCacheListener,IContentsListener unpause) {
+        EnergyContainerHelper builder = EnergyContainerHelper.forSideWithConfig(this);
+        builder.addContainer(energyContainer = MachineEnergyContainer.input(this, unpause));
         return builder.build();
     }
 
     @NotNull
     @Override
-    protected IInventorySlotHolder getInitialInventory(IContentsListener listener, IContentsListener recipeCacheListener) {
-        InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
+    protected IInventorySlotHolder getInitialInventory(IContentsListener listener, IContentsListener recipeCacheListener,IContentsListener unpause) {
+        InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this);
         builder.addSlot(mainInputSlot = InputInventorySlot.at(item -> containsRecipeABC(item, extraInputSlot.getStack(), inputGasTank.getStack()), this::containsRecipeA,
-                        recipeCacheListener, 64, 17))
-                .tracksWarnings(slot -> slot.warning(WarningType.NO_MATCHING_RECIPE, getWarningCheck(NOT_ENOUGH_ITEM_INPUT_ERROR)));
+                    recipeCacheListener, 64, 17))
+              .tracksWarnings(slot -> slot.warning(WarningType.NO_MATCHING_RECIPE, getWarningCheck(NOT_ENOUGH_ITEM_INPUT_ERROR)));
         builder.addSlot(extraInputSlot = InputInventorySlot.at(item -> containsRecipeBAC(mainInputSlot.getStack(), item,inputGasTank.getStack()), this::containsRecipeB, recipeCacheListener,
                 64, 53)
         ).tracksWarnings(slot -> slot.warning(WarningType.NO_MATCHING_RECIPE, getWarningCheck(RecipeError.NOT_ENOUGH_SECONDARY_INPUT)));
-        builder.addSlot(outputSlot = OutputInventorySlot.at(listener, 116, 35))
+        builder.addSlot(outputSlot = OutputInventorySlot.at(unpause, 116, 35))
                 .tracksWarnings(slot -> slot.warning(WarningType.NO_SPACE_IN_OUTPUT, getWarningCheck(NOT_ENOUGH_SPACE_ITEM_OUTPUT_ERROR)));
         builder.addSlot(energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, this::getLevel, listener, 141, 35));
         return builder.build();
@@ -145,15 +141,16 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
 
 
     @Override
-    protected void onUpdateServer() {
-        super.onUpdateServer();
+    protected boolean onUpdateServer() {
+        boolean send = super.onUpdateServer();
         energySlot.fillContainerOrConvert();
         recipeCacheLookupMonitor.updateAndProcess();
+        return send;
     }
 
     @NotNull
     @Override
-    public IMekanismRecipeTypeProvider<ChemixerRecipe, EMInputRecipeCache.ItemItemChemical<Gas, GasStack, ChemixerRecipe>> getRecipeType() {
+    public IMekanismRecipeTypeProvider<BiItemChemicalRecipeInput,ChemixerRecipe, EMInputRecipeCache.ItemItemChemical<ChemixerRecipe>> getRecipeType() {
         return EMRecipeType.CHEMIXING;
     }
 
@@ -167,13 +164,13 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
     @Override
     public CachedRecipe<ChemixerRecipe> createNewCachedRecipe(@NotNull ChemixerRecipe recipe, int cacheIndex) {
         return new ChemixerCachedRecipe(recipe, recheckAllRecipeErrors, itemInputHandler, extraInputHandler, gasInputHandler, outputHandler)
-                .setErrorsChanged(this::onErrorsChanged)
-                .setCanHolderFunction(() -> MekanismUtils.canFunction(this))
-                .setActive(this::setActive)
-                .setEnergyRequirements(energyContainer::getEnergyPerTick, energyContainer)
-                .setRequiredTicks(this::getTicksRequired)
-                .setOnFinish(this::markForSave)
-                .setOperatingTicksChanged(this::setOperatingTicks);
+              .setErrorsChanged(this::onErrorsChanged)
+              .setCanHolderFunction(this::canFunction)
+              .setActive(this::setActive)
+              .setEnergyRequirements(energyContainer::getEnergyPerTick, energyContainer)
+              .setRequiredTicks(this::getTicksRequired)
+              .setOnFinish(this::markForSave)
+              .setOperatingTicksChanged(this::setOperatingTicks);
     }
 
     public MachineEnergyContainer<TileEntityChemixer> getEnergyContainer() {
@@ -182,8 +179,14 @@ public class TileEntityChemixer extends TileEntityProgressMachine<ChemixerRecipe
 
     //Methods relating to IComputerTile
     @ComputerMethod(methodDescription = ComputerConstants.DESCRIPTION_GET_ENERGY_USAGE)
-    FloatingLong getEnergyUsage() {
-        return getActive() ? energyContainer.getEnergyPerTick() : FloatingLong.ZERO;
+    long getEnergyUsage() {
+        return getActive() ? energyContainer.getEnergyPerTick() : 0;
     }
     //End methods IComputerTile
+
+
+    @Override
+    public @Nullable IRecipeViewerRecipeType<ChemixerRecipe> recipeViewerType() {
+        return JEIRecipeTypes.CHEMIXING;
+    }
 }

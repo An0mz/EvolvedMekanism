@@ -3,6 +3,7 @@ package fr.iglee42.evolvedmekanism.tiles.machine;
 import fr.iglee42.evolvedmekanism.interfaces.EMInputRecipeCache;
 import fr.iglee42.evolvedmekanism.interfaces.ThreeInputCachedRecipe;
 import fr.iglee42.evolvedmekanism.interfaces.TripleItemRecipeLookupHandler;
+import fr.iglee42.evolvedmekanism.jei.JEIRecipeTypes;
 import fr.iglee42.evolvedmekanism.recipes.AlloyerRecipe;
 import fr.iglee42.evolvedmekanism.registries.EMBlocks;
 import fr.iglee42.evolvedmekanism.registries.EMRecipeType;
@@ -11,13 +12,13 @@ import fr.iglee42.evolvedmekanism.tiles.upgrade.AlloyerUpgradeData;
 import fr.iglee42.evolvedmekanism.utils.EMUpgrades;
 import mekanism.api.IContentsListener;
 import mekanism.api.inventory.IInventorySlot;
-import mekanism.api.math.FloatingLong;
 import mekanism.api.recipes.cache.CachedRecipe;
 import mekanism.api.recipes.cache.CachedRecipe.OperationTracker.RecipeError;
 import mekanism.api.recipes.inputs.IInputHandler;
 import mekanism.api.recipes.inputs.InputHelper;
 import mekanism.api.recipes.outputs.IOutputHandler;
 import mekanism.api.recipes.outputs.OutputHelper;
+import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import mekanism.common.capabilities.energy.MachineEnergyContainer;
 import mekanism.common.capabilities.holder.energy.EnergyContainerHelper;
 import mekanism.common.capabilities.holder.energy.IEnergyContainerHolder;
@@ -42,8 +43,9 @@ import mekanism.common.tile.component.config.slot.InventorySlotInfo;
 import mekanism.common.tile.prefab.TileEntityProgressMachine;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -78,7 +80,6 @@ public class TileEntityAlloyer extends TileEntityProgressMachine<AlloyerRecipe> 
 
     public TileEntityAlloyer(BlockPos pos, BlockState state) {
         super(EMBlocks.ALLOYER, pos, state, TRACKED_ERROR_TYPES, 200);
-        configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY);
         setupItemIOExtraConfig(configComponent,mainInputSlot, outputSlot, extraInputSlot,secondExtraInputSlot, energySlot);
         configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
 
@@ -100,22 +101,21 @@ public class TileEntityAlloyer extends TileEntityProgressMachine<AlloyerRecipe> 
             itemConfig.addSlotInfo(DataType.EXTRA, new InventorySlotInfo(true, true, extraSlot, secondaryExtraSlot));
             itemConfig.addSlotInfo(DataType.ENERGY, new InventorySlotInfo(true, true, energySlot));
             //Set default config directions
-            itemConfig.setDefaults();
         }
     }
 
     @NotNull
     @Override
-    protected IEnergyContainerHolder getInitialEnergyContainers(IContentsListener listener, IContentsListener recipeCacheListener) {
-        EnergyContainerHelper builder = EnergyContainerHelper.forSideWithConfig(this::getDirection, this::getConfig);
-        builder.addContainer(energyContainer = MachineEnergyContainer.input(this, listener));
+    protected IEnergyContainerHolder getInitialEnergyContainers(IContentsListener listener, IContentsListener recipeCacheListener,IContentsListener unpause) {
+        EnergyContainerHelper builder = EnergyContainerHelper.forSideWithConfig(this);
+        builder.addContainer(energyContainer = MachineEnergyContainer.input(this, unpause));
         return builder.build();
     }
 
     @NotNull
     @Override
-    protected IInventorySlotHolder getInitialInventory(IContentsListener listener, IContentsListener recipeCacheListener) {
-        InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
+    protected IInventorySlotHolder getInitialInventory(IContentsListener listener, IContentsListener recipeCacheListener,IContentsListener unpause) {
+        InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this);
         builder.addSlot(mainInputSlot = InputInventorySlot.at(item -> containsRecipeABC(item, extraInputSlot.getStack(),secondExtraInputSlot.getStack()), this::containsRecipeA, recipeCacheListener,
                 64, 17)
         ).tracksWarnings(slot -> slot.warning(WarningType.NO_MATCHING_RECIPE, getWarningCheck(RecipeError.NOT_ENOUGH_INPUT)));
@@ -125,7 +125,7 @@ public class TileEntityAlloyer extends TileEntityProgressMachine<AlloyerRecipe> 
         builder.addSlot(secondExtraInputSlot = LimitedInputInventorySlot.at(item -> containsRecipeCAB(mainInputSlot.getStack(), extraInputSlot.getStack(),item), this::containsRecipeC, recipeCacheListener,
                 75, 53)
         ).tracksWarnings(slot -> slot.warning(WarningType.NO_MATCHING_RECIPE, getWarningCheck(RecipeError.NOT_ENOUGH_SECONDARY_INPUT)));
-        builder.addSlot(outputSlot = OutputInventorySlot.at(listener, 116, 35))
+        builder.addSlot(outputSlot = OutputInventorySlot.at(unpause, 116, 35))
                 .tracksWarnings(slot -> slot.warning(WarningType.NO_SPACE_IN_OUTPUT, getWarningCheck(RecipeError.NOT_ENOUGH_OUTPUT_SPACE)));
         builder.addSlot(energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, this::getLevel, listener, 20, 35));
         extraInputSlot.setSlotType(ContainerSlotType.EXTRA);
@@ -134,15 +134,16 @@ public class TileEntityAlloyer extends TileEntityProgressMachine<AlloyerRecipe> 
     }
 
     @Override
-    protected void onUpdateServer() {
-        super.onUpdateServer();
+    protected boolean onUpdateServer() {
+        boolean send = super.onUpdateServer();
         energySlot.fillContainerOrConvert();
         recipeCacheLookupMonitor.updateAndProcess();
+        return send;
     }
 
     @NotNull
     @Override
-    public IMekanismRecipeTypeProvider<AlloyerRecipe, EMInputRecipeCache.TripleItem<AlloyerRecipe>> getRecipeType() {
+    public IMekanismRecipeTypeProvider<?,AlloyerRecipe, EMInputRecipeCache.TripleItem<AlloyerRecipe>> getRecipeType() {
         return EMRecipeType.ALLOYING;
     }
 
@@ -162,19 +163,19 @@ public class TileEntityAlloyer extends TileEntityProgressMachine<AlloyerRecipe> 
     @Override
     public CachedRecipe<AlloyerRecipe> createNewCachedRecipe(@NotNull AlloyerRecipe recipe, int cacheIndex) {
         return ThreeInputCachedRecipe.alloyer(recipe, recheckAllRecipeErrors, inputHandler, extraInputHandler, secondExtraInputHandler, outputHandler)
-                .setErrorsChanged(this::onErrorsChanged)
-                .setCanHolderFunction(() -> MekanismUtils.canFunction(this))
-                .setActive(this::setActive)
-                .setEnergyRequirements(energyContainer::getEnergyPerTick, energyContainer)
-                .setRequiredTicks(this::getTicksRequired)
-                .setOnFinish(this::markForSave)
-                .setOperatingTicksChanged(this::setOperatingTicks);
+              .setErrorsChanged(this::onErrorsChanged)
+              .setCanHolderFunction(this::canFunction)
+              .setActive(this::setActive)
+              .setEnergyRequirements(energyContainer::getEnergyPerTick, energyContainer)
+              .setRequiredTicks(this::getTicksRequired)
+              .setOnFinish(this::markForSave)
+              .setOperatingTicksChanged(this::setOperatingTicks);
     }
 
     @NotNull
     @Override
-    public AlloyerUpgradeData getUpgradeData() {
-        return new AlloyerUpgradeData(redstone, getControlType(), getEnergyContainer(), getOperatingTicks(), energySlot, extraInputSlot,secondExtraInputSlot, mainInputSlot, outputSlot, getComponents());
+    public AlloyerUpgradeData getUpgradeData(HolderLookup.Provider provider) {
+        return new AlloyerUpgradeData(provider,redstone, getControlType(), getEnergyContainer(), getOperatingTicks(), energySlot, extraInputSlot,secondExtraInputSlot, mainInputSlot, outputSlot, getComponents());
     }
 
     public MachineEnergyContainer<TileEntityAlloyer> getEnergyContainer() {
@@ -182,16 +183,23 @@ public class TileEntityAlloyer extends TileEntityProgressMachine<AlloyerRecipe> 
     }
 
     @Override
-    public boolean isConfigurationDataCompatible(BlockEntityType<?> tileType) {
+    public boolean isConfigurationDataCompatible(Block blockType) {
         //Allow exact match or factories of the same type (as we will just ignore the extra data)
-        return super.isConfigurationDataCompatible(tileType) || MekanismUtils.isSameTypeFactory(getBlockType(), tileType);
+        return super.isConfigurationDataCompatible(blockType) || MekanismUtils.isSameTypeFactory(getBlockHolder(), blockType);
     }
+
 
     //Methods relating to IComputerTile
     @SuppressWarnings("unused")
     @ComputerMethod(methodDescription = ComputerConstants.DESCRIPTION_GET_ENERGY_USAGE)
-    FloatingLong getEnergyUsage() {
-        return getActive() ? energyContainer.getEnergyPerTick() : FloatingLong.ZERO;
+    long getEnergyUsage() {
+        return getActive() ? energyContainer.getEnergyPerTick() : 0;
     }
     //End methods IComputerTile
+
+
+    @Override
+    public @Nullable IRecipeViewerRecipeType<AlloyerRecipe> recipeViewerType() {
+        return JEIRecipeTypes.ALLOYING;
+    }
 }
