@@ -1,27 +1,25 @@
 package fr.iglee42.evolvedmekanism.compat.extras;
 
-import com.jerry.mekanism_extras.common.registries.ExtraTileEntityTypes;
-import com.jerry.mekanism_extras.common.tier.ExtraFactoryTier;
-import com.jerry.mekanism_extras.common.tile.factory.TileEntityExtraItemToItemFactory;
-import com.jerry.mekanism_extras.common.util.ExtraEnumUtils;
+import com.jerry.mekextras.common.tile.factory.TileEntityExtraItemToItemFactory;
 import fr.iglee42.evolvedmekanism.interfaces.EMInputRecipeCache;
 import fr.iglee42.evolvedmekanism.interfaces.ThreeInputCachedRecipe;
 import fr.iglee42.evolvedmekanism.interfaces.TripleItemRecipeLookupHandler;
+import fr.iglee42.evolvedmekanism.jei.JEIRecipeTypes;
 import fr.iglee42.evolvedmekanism.mixins.extras.TileEntityExtraFactoryAccessor;
 import fr.iglee42.evolvedmekanism.recipes.AlloyerRecipe;
-import fr.iglee42.evolvedmekanism.registries.EMFactoryType;
+import fr.iglee42.evolvedmekanism.recipes.vanilla_input.TriItemRecipeInput;
 import fr.iglee42.evolvedmekanism.registries.EMRecipeType;
-import fr.iglee42.evolvedmekanism.registries.EMTileEntityTypes;
 import fr.iglee42.evolvedmekanism.tiles.LimitedInputInventorySlot;
 import fr.iglee42.evolvedmekanism.tiles.upgrade.AlloyerUpgradeData;
+import fr.iglee42.evolvedmekanism.utils.EMUpgrades;
 import mekanism.api.IContentsListener;
 import mekanism.api.inventory.IInventorySlot;
 import mekanism.api.math.MathUtils;
-import mekanism.api.providers.IBlockProvider;
 import mekanism.api.recipes.cache.CachedRecipe;
 import mekanism.api.recipes.cache.CachedRecipe.OperationTracker.RecipeError;
 import mekanism.api.recipes.inputs.IInputHandler;
 import mekanism.api.recipes.inputs.InputHelper;
+import mekanism.client.recipe_viewer.type.IRecipeViewerRecipeType;
 import mekanism.common.Mekanism;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.integration.computer.SpecialComputerMethodWrapper.ComputerIInventorySlotWrapper;
@@ -36,10 +34,11 @@ import mekanism.common.tile.component.config.DataType;
 import mekanism.common.tile.component.config.slot.InventorySlotInfo;
 import mekanism.common.upgrade.IUpgradeData;
 import mekanism.common.util.InventoryUtils;
-import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -70,7 +69,7 @@ public class TileEntityExtraAlloyingFactory extends TileEntityExtraItemToItemFac
     @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getTertiaryInput", docPlaceholder = "tertiary input slot")
     LimitedInputInventorySlot secondExtraSlot;
 
-    public TileEntityExtraAlloyingFactory(IBlockProvider blockProvider, BlockPos pos, BlockState state) {
+    public TileEntityExtraAlloyingFactory(Holder<Block> blockProvider, BlockPos pos, BlockState state) {
         super(blockProvider, pos, state, TRACKED_ERROR_TYPES, GLOBAL_ERROR_TYPES);
         extraInputHandler = InputHelper.getInputHandler(extraSlot, RecipeError.NOT_ENOUGH_SECONDARY_INPUT);
         secondExtraInputHandler = InputHelper.getInputHandler(secondExtraSlot, RecipeError.NOT_ENOUGH_SECONDARY_INPUT);
@@ -108,6 +107,11 @@ public class TileEntityExtraAlloyingFactory extends TileEntityExtraItemToItemFac
     }
 
     @Override
+    public boolean isItemValidForSlot(@NotNull ItemStack stack) {
+        return containsRecipeA(stack);
+    }
+
+    @Override
     protected int getNeededInput(AlloyerRecipe recipe, ItemStack inputStack) {
         return MathUtils.clampToInt(recipe.getMainInput().getNeededAmount(inputStack));
     }
@@ -132,8 +136,19 @@ public class TileEntityExtraAlloyingFactory extends TileEntityExtraItemToItemFac
 
     @NotNull
     @Override
-    public IMekanismRecipeTypeProvider<AlloyerRecipe, EMInputRecipeCache.TripleItem<AlloyerRecipe>> getRecipeType() {
+    public IMekanismRecipeTypeProvider<TriItemRecipeInput, AlloyerRecipe, EMInputRecipeCache.TripleItem<AlloyerRecipe>> getRecipeType() {
         return EMRecipeType.ALLOYING;
+    }
+
+    @Override
+    public IRecipeViewerRecipeType<AlloyerRecipe> recipeViewerType() {
+        return JEIRecipeTypes.ALLOYING;
+    }
+
+    @Override
+    public int getTicksRequired() {
+        //Mekanism Extras' creative upgrade finishes an operation every tick (its energy side is handled by Extras)
+        return EMUpgrades.hasCreative(this) ? 1 : super.getTicksRequired();
     }
 
     @Nullable
@@ -147,37 +162,23 @@ public class TileEntityExtraAlloyingFactory extends TileEntityExtraItemToItemFac
     public CachedRecipe<AlloyerRecipe> createNewCachedRecipe(@NotNull AlloyerRecipe recipe, int cacheIndex) {
         return ThreeInputCachedRecipe.alloyer(recipe, recheckAllRecipeErrors[cacheIndex], inputHandlers[cacheIndex], extraInputHandler, secondExtraInputHandler, outputHandlers[cacheIndex])
                 .setErrorsChanged(errors -> errorTracker.onErrorsChanged(errors, cacheIndex))
-                .setCanHolderFunction(() -> MekanismUtils.canFunction(this))
+                .setCanHolderFunction(this::canFunction)
                 .setActive(active -> setActiveState(active, cacheIndex))
                 .setEnergyRequirements(energyContainer::getEnergyPerTick, energyContainer)
                 .setRequiredTicks(this::getTicksRequired)
                 .setOnFinish(this::markForSave)
-                .setBaselineMaxOperations(this::getBaselineMaxOperations)
+                .setBaselineMaxOperations(this::getOperationsPerTick)
                 .setOperatingTicksChanged(operatingTicks -> progress[cacheIndex] = operatingTicks);
     }
 
     @Override
-    public boolean isConfigurationDataCompatible(BlockEntityType<?> tileType) {
-        //Replaces TileEntityExtraFactory's check, whose switch over FactoryType can't handle the ALLOYING value added at runtime
-        if (getType() == tileType || EMTileEntityTypes.ALLOYER.get() == tileType) {
-            return true;
-        }
-        for (ExtraFactoryTier factoryTier : ExtraEnumUtils.EXTRA_FACTORY_TIERS) {
-            if (ExtraTileEntityTypes.getExtraFactoryTile(factoryTier, EMFactoryType.ALLOYING).get() == tileType) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public void parseUpgradeData(@NotNull IUpgradeData upgradeData) {
+    public void parseUpgradeData(HolderLookup.Provider provider, @NotNull IUpgradeData upgradeData) {
         if (upgradeData instanceof AlloyerUpgradeData data) {
             //Generic factory upgrade data handling (energy, progress, slots, then components such as upgrades)
-            super.parseUpgradeData(upgradeData);
+            super.parseUpgradeData(provider, upgradeData);
             //Copy the stack using NBT so that if it is not actually valid due to a reload we don't crash
-            extraSlot.deserializeNBT(data.extraSlot.serializeNBT());
-            secondExtraSlot.deserializeNBT(data.secondaryExtraSlot.serializeNBT());
+            extraSlot.deserializeNBT(provider, data.extraSlot.serializeNBT(provider));
+            secondExtraSlot.deserializeNBT(provider, data.secondaryExtraSlot.serializeNBT(provider));
         } else {
             Mekanism.logger.warn("Unhandled upgrade data.", new Throwable());
         }
@@ -185,8 +186,8 @@ public class TileEntityExtraAlloyingFactory extends TileEntityExtraItemToItemFac
 
     @NotNull
     @Override
-    public AlloyerUpgradeData getUpgradeData() {
+    public AlloyerUpgradeData getUpgradeData(HolderLookup.Provider provider) {
         EnergyInventorySlot energySlot = ((TileEntityExtraFactoryAccessor) this).evolvedmekanism$getEnergySlot();
-        return new AlloyerUpgradeData(redstone, getControlType(), getEnergyContainer(), progress, energySlot, extraSlot, secondExtraSlot, inputSlots, outputSlots, isSorting(), getComponents());
+        return new AlloyerUpgradeData(provider, redstone, getControlType(), getEnergyContainer(), progress, energySlot, extraSlot, secondExtraSlot, inputSlots, outputSlots, isSorting(), getComponents());
     }
 }

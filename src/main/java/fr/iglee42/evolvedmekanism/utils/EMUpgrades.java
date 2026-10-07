@@ -2,7 +2,7 @@ package fr.iglee42.evolvedmekanism.utils;
 
 import mekanism.api.Upgrade;
 import mekanism.common.tile.base.TileEntityMekanism;
-import net.minecraftforge.fml.loading.LoadingModList;
+import net.neoforged.fml.loading.LoadingModList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
@@ -29,11 +29,11 @@ public class EMUpgrades {
         return null;
     }
 
-    public static EnumSet<Upgrade> withCreative(EnumSet<Upgrade> upgrades) {
+    public static Upgrade[] withCreative(EnumSet<Upgrade> upgrades) {
         if (CREATIVE != null) {
             upgrades.add(CREATIVE);
         }
-        return upgrades;
+        return upgrades.toArray(new Upgrade[0]);
     }
 
     public static boolean hasCreative(TileEntityMekanism tile) {
