@@ -90,6 +90,10 @@ dependencies {
     runtimeOnly "curse.maven:SolarFluxReborn-246974:6776635"
     runtimeOnly "curse.maven:HammerLib-247401:8968713"
 
+    //Testing: mods the alloyer compat recipes are made for
+    runtimeOnly "curse.maven:ae2-223794:8992605"
+    runtimeOnly "curse.maven:guideme-1173950:8897145"
+    runtimeOnly "curse.maven:enderio-64578:8832691"
 }
 
 tasks.named('processResources', ProcessResources).configure {
