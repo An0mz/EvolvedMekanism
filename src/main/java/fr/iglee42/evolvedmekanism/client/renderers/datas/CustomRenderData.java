@@ -1,22 +1,14 @@
 package fr.iglee42.evolvedmekanism.client.renderers.datas;
 
-import java.util.Objects;
 import mekanism.api.annotations.NothingNullByDefault;
-import mekanism.api.chemical.Chemical;
 import mekanism.api.chemical.ChemicalStack;
-import mekanism.api.chemical.gas.Gas;
-import mekanism.api.chemical.infuse.InfuseType;
-import mekanism.api.chemical.pigment.Pigment;
-import mekanism.api.chemical.slurry.Slurry;
-import fr.iglee42.evolvedmekanism.client.renderers.datas.CustomChemicalRenderData.GasRenderData;
-import fr.iglee42.evolvedmekanism.client.renderers.datas.CustomChemicalRenderData.InfusionRenderData;
-import fr.iglee42.evolvedmekanism.client.renderers.datas.CustomChemicalRenderData.PigmentRenderData;
-import fr.iglee42.evolvedmekanism.client.renderers.datas.CustomChemicalRenderData.SlurryRenderData;
 import mekanism.common.lib.multiblock.MultiblockData;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
-import net.minecraftforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 @NothingNullByDefault
 public abstract class CustomRenderData {
@@ -52,7 +44,7 @@ public abstract class CustomRenderData {
     public static class Builder<DATA_TYPE extends CustomRenderData> {
 
         @Nullable
-        private final Chemical<?> chemical;
+        private final ChemicalStack chemical;
         private final FluidStack fluid;
         @Nullable
         private BlockPos location;
@@ -60,16 +52,16 @@ public abstract class CustomRenderData {
         private float length;
         private float width;
 
-        private Builder(@Nullable Chemical<?> chemical, FluidStack fluid) {
+        private Builder(@Nullable ChemicalStack chemical, FluidStack fluid) {
             this.chemical = chemical;
             this.fluid = fluid;
         }
 
-        public static <CHEMICAL extends Chemical<CHEMICAL>> Builder<CustomChemicalRenderData<CHEMICAL>> create(ChemicalStack<CHEMICAL> chemical) {
+        public static  Builder<CustomChemicalRenderData> create(ChemicalStack chemical) {
             if (chemical.isEmpty()) {
                 throw new IllegalArgumentException("Chemical may not be empty");
             }
-            return new Builder<>(chemical.getType(), FluidStack.EMPTY);
+            return new Builder<>(chemical, FluidStack.EMPTY);
         }
 
         public Builder<DATA_TYPE> location(BlockPos renderLocation) {
@@ -110,14 +102,8 @@ public abstract class CustomRenderData {
             CustomRenderData data;
             if (!fluid.isEmpty()) {
                 data = new FluidRenderData(location, width, height, length, fluid);
-            } else if (chemical instanceof Gas gas) {
-                data = new GasRenderData(location, width, height, length, gas);
-            } else if (chemical instanceof InfuseType infuseType) {
-                data = new InfusionRenderData(location, width, height, length, infuseType);
-            } else if (chemical instanceof Pigment pigment) {
-                data = new PigmentRenderData(location, width, height, length, pigment);
-            } else if (chemical instanceof Slurry slurry) {
-                data = new SlurryRenderData(location, width, height, length, slurry);
+            } else if (!chemical.isEmpty()) {
+                data = new CustomChemicalRenderData(location, width, height, length, chemical);
             } else {
                 throw new IllegalStateException("Incomplete render data builder, missing or unknown chemical or fluid.");
             }

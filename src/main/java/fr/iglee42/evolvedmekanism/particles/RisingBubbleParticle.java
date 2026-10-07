@@ -1,5 +1,6 @@
 package fr.iglee42.evolvedmekanism.particles;
 
+import net.minecraft.world.phys.AABB;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 
@@ -33,8 +34,8 @@ public class RisingBubbleParticle extends TextureSheetParticle {
     }
 
     @Override
-    public boolean shouldCull() {
-        return false;
+    public AABB getRenderBoundingBox(float partialTicks) {
+        return AABB.INFINITE;
     }
 
     @Override

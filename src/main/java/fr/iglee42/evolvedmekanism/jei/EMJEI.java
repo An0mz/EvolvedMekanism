@@ -1,106 +1,38 @@
 package fr.iglee42.evolvedmekanism.jei;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Collection;
 
 import fr.iglee42.evolvedmekanism.EvolvedMekanism;
 import fr.iglee42.evolvedmekanism.compat.extras.ExtrasJEI;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import fr.iglee42.evolvedmekanism.jei.categories.APTRecipeCategory;
 import fr.iglee42.evolvedmekanism.jei.categories.AlloyerRecipeCategory;
 import fr.iglee42.evolvedmekanism.jei.categories.ChemixerRecipeCategory;
-import fr.iglee42.evolvedmekanism.recipes.AlloyerRecipe;
-import fr.iglee42.evolvedmekanism.recipes.ChemixerRecipe;
 import fr.iglee42.evolvedmekanism.registries.EMBlocks;
 import fr.iglee42.evolvedmekanism.registries.EMItems;
 import fr.iglee42.evolvedmekanism.registries.EMRecipeType;
-import mekanism.api.chemical.ChemicalStack;
-import mekanism.api.chemical.IChemicalHandler;
-import mekanism.api.energy.IStrictEnergyHandler;
-import mekanism.api.math.FloatingLong;
-import mekanism.api.providers.IItemProvider;
-import mekanism.api.recipes.ItemStackGasToItemStackRecipe;
-import mekanism.client.jei.CatalystRegistryHelper;
-import mekanism.client.jei.MekanismJEIRecipeType;
-import mekanism.client.jei.RecipeRegistryHelper;
-import mekanism.common.block.BlockOre;
+import mekanism.client.recipe_viewer.jei.CatalystRegistryHelper;
+import mekanism.client.recipe_viewer.jei.MekanismSubtypeInterpreter;
+import mekanism.client.recipe_viewer.jei.RecipeRegistryHelper;
 import mekanism.common.capabilities.Capabilities;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.ingredients.subtypes.IIngredientSubtypeInterpreter;
-import mezz.jei.api.ingredients.subtypes.UidContext;
+import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fluids.FluidUtil;
 import org.jetbrains.annotations.NotNull;
 
 @JeiPlugin
 public class EMJEI implements IModPlugin {
 
-    // Lazily initialized recipe types to avoid triggering Mekanism class initialization at JEI plugin load time
-    public static MekanismJEIRecipeType<AlloyerRecipe> ALLOYING;
-    public static MekanismJEIRecipeType<ChemixerRecipe> CHEMIXING;
-    public static MekanismJEIRecipeType<ItemStackGasToItemStackRecipe> APT;
-
-    private static final IIngredientSubtypeInterpreter<ItemStack> MEKANISM_NBT_INTERPRETER = (stack, context) -> {
-        if (context == UidContext.Ingredient && stack.hasTag()) {
-            String nbtRepresentation = getChemicalComponent(stack, Capabilities.GAS_HANDLER);
-            nbtRepresentation = addInterpretation(nbtRepresentation, getChemicalComponent(stack, Capabilities.INFUSION_HANDLER));
-            nbtRepresentation = addInterpretation(nbtRepresentation, getChemicalComponent(stack, Capabilities.PIGMENT_HANDLER));
-            nbtRepresentation = addInterpretation(nbtRepresentation, getChemicalComponent(stack, Capabilities.SLURRY_HANDLER));
-            nbtRepresentation = addInterpretation(nbtRepresentation, getEnergyComponent(stack));
-            return nbtRepresentation;
-        }
-        return IIngredientSubtypeInterpreter.NONE;
-    };
-
-    private static String addInterpretation(String nbtRepresentation, String component) {
-        return nbtRepresentation.isEmpty() ? component : nbtRepresentation + ":" + component;
-    }
-
-    private static String getChemicalComponent(ItemStack stack, Capability<? extends IChemicalHandler<?, ?>> capability) {
-        Optional<? extends IChemicalHandler<?, ?>> cap = stack.getCapability(capability).resolve();
-        if (cap.isPresent()) {
-            IChemicalHandler<?, ?> handler = cap.get();
-            String component = "";
-            for (int tank = 0, tanks = handler.getTanks(); tank < tanks; tank++) {
-                ChemicalStack<?> chemicalStack = handler.getChemicalInTank(tank);
-                if (!chemicalStack.isEmpty()) {
-                    component = addInterpretation(component, chemicalStack.getTypeRegistryName().toString());
-                } else if (tanks > 1) {
-                    component = addInterpretation(component, "empty");
-                }
-            }
-            return component;
-        }
-        return IIngredientSubtypeInterpreter.NONE;
-    }
-
-    private static String getEnergyComponent(ItemStack stack) {
-        Optional<IStrictEnergyHandler> capability = stack.getCapability(Capabilities.STRICT_ENERGY).resolve();
-        if (capability.isPresent()) {
-            IStrictEnergyHandler energyHandlerItem = capability.get();
-            String component = "";
-            int containers = energyHandlerItem.getEnergyContainerCount();
-            for (int container = 0; container < containers; container++) {
-                FloatingLong neededEnergy = energyHandlerItem.getNeededEnergy(container);
-                if (neededEnergy.isZero()) {
-                    component = addInterpretation(component, "filled");
-                } else if (containers > 1) {
-                    component = addInterpretation(component, "empty");
-                }
-            }
-            return component;
-        }
-        return IIngredientSubtypeInterpreter.NONE;
-    }
+    private static final ISubtypeInterpreter<ItemStack> MEKANISM_DATA_INTERPRETER = new MekanismSubtypeInterpreter();
 
     @NotNull
     @Override
@@ -108,53 +40,44 @@ public class EMJEI implements IModPlugin {
         return EvolvedMekanism.rl("jei_plugin");
     }
 
-    public static void registerItemSubtypes(ISubtypeRegistration registry, List<? extends IItemProvider> itemProviders) {
-        for (IItemProvider itemProvider : itemProviders) {
+    public static void registerItemSubtypes(ISubtypeRegistration registry, Collection<? extends Holder<Item>> items) {
+        for (Holder<Item> item : items) {
             //Handle items
-            ItemStack itemStack = itemProvider.getItemStack();
-            if (itemStack.getCapability(Capabilities.STRICT_ENERGY).isPresent() || itemStack.getCapability(Capabilities.GAS_HANDLER).isPresent() ||
-                    itemStack.getCapability(Capabilities.INFUSION_HANDLER).isPresent() || itemStack.getCapability(Capabilities.PIGMENT_HANDLER).isPresent() ||
-                    itemStack.getCapability(Capabilities.SLURRY_HANDLER).isPresent() || FluidUtil.getFluidHandler(itemStack).isPresent()) {
-                registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, itemProvider.asItem(), MEKANISM_NBT_INTERPRETER);
+            ItemStack stack = new ItemStack(item);
+            if (Capabilities.STRICT_ENERGY.hasCapability(stack) || Capabilities.CHEMICAL.hasCapability(stack) || Capabilities.FLUID.hasCapability(stack)) {
+                registry.registerSubtypeInterpreter(stack.getItem(), MEKANISM_DATA_INTERPRETER);
             }
         }
     }
 
     @Override
     public void registerItemSubtypes(@NotNull ISubtypeRegistration registry) {
-        registerItemSubtypes(registry, EMItems.ITEMS.getAllItems());
-        registerItemSubtypes(registry, EMBlocks.BLOCKS.getAllBlocks());
+        registerItemSubtypes(registry, EMItems.ITEMS.getEntries());
+        registerItemSubtypes(registry, EMBlocks.BLOCKS.getSecondaryEntries());
     }
 
     @Override
     public void registerCategories(IRecipeCategoryRegistration registry) {
         IGuiHelper guiHelper = registry.getJeiHelpers().getGuiHelper();
-        // Initialize Mekanism-dependent JEI recipe type instances now that JEI is registering categories
-        if (ALLOYING == null) ALLOYING = new MekanismJEIRecipeType<>(EMBlocks.ALLOYER, AlloyerRecipe.class);
-        if (CHEMIXING == null) CHEMIXING = new MekanismJEIRecipeType<>(EMBlocks.CHEMIXER, ChemixerRecipe.class);
-        if (APT == null) APT = new MekanismJEIRecipeType<>(EMItems.BETTER_GOLD_INGOT, ItemStackGasToItemStackRecipe.class);
-
-        registry.addRecipeCategories(new AlloyerRecipeCategory(guiHelper, ALLOYING));
-        registry.addRecipeCategories(new ChemixerRecipeCategory(guiHelper, CHEMIXING));
-        registry.addRecipeCategories(new APTRecipeCategory(guiHelper, APT));
+        registry.addRecipeCategories(new AlloyerRecipeCategory(guiHelper, JEIRecipeTypes.ALLOYING));
+        registry.addRecipeCategories(new ChemixerRecipeCategory(guiHelper, JEIRecipeTypes.CHEMIXING));
+        registry.addRecipeCategories(new APTRecipeCategory(guiHelper, JEIRecipeTypes.APT));
     }
 
     @Override
     public void registerRecipes(@NotNull IRecipeRegistration registry) {
-        EMBlocks.BLOCKS.getAllBlocks().stream().filter(b->b.getBlock() instanceof BlockOre).forEach(b->{
-        });
-        RecipeRegistryHelper.register(registry, ALLOYING, EMRecipeType.ALLOYING);
-        RecipeRegistryHelper.register(registry, CHEMIXING, EMRecipeType.CHEMIXING);
-        RecipeRegistryHelper.register(registry, APT, EMRecipeType.APT);
+        RecipeRegistryHelper.register(registry, JEIRecipeTypes.ALLOYING, EMRecipeType.ALLOYING);
+        RecipeRegistryHelper.register(registry, JEIRecipeTypes.CHEMIXING, EMRecipeType.CHEMIXING);
+        RecipeRegistryHelper.register(registry, JEIRecipeTypes.APT, EMRecipeType.APT);
     }
 
     @Override
     public void registerRecipeCatalysts(@NotNull IRecipeCatalystRegistration registry) {
-        CatalystRegistryHelper.register(registry, EMBlocks.ALLOYER);
+        CatalystRegistryHelper.register(registry, JEIRecipeTypes.ALLOYING);
         if (ModList.get().isLoaded("mekanism_extras")) {
             ExtrasJEI.registerCatalysts(registry);
         }
-        CatalystRegistryHelper.register(registry, EMBlocks.CHEMIXER);
-        CatalystRegistryHelper.register(registry,APT, EMBlocks.APT_CASING,EMBlocks.APT_PORT,EMBlocks.SUPERCHARGING_ELEMENT, EMBlocks.SUPERCHARGING_ELEMENT_MK2);
+        CatalystRegistryHelper.register(registry, JEIRecipeTypes.CHEMIXING);
+        CatalystRegistryHelper.register(registry, JEIRecipeTypes.APT);
     }
 }

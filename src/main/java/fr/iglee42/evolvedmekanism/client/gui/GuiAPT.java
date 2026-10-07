@@ -1,20 +1,16 @@
 package fr.iglee42.evolvedmekanism.client.gui;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import fr.iglee42.evolvedmekanism.client.bars.GuiCustomDynamicHorizontalRateBar;
 import fr.iglee42.evolvedmekanism.config.EMConfig;
-import fr.iglee42.evolvedmekanism.jei.EMJEI;
+import fr.iglee42.evolvedmekanism.jei.JEIRecipeTypes;
 import fr.iglee42.evolvedmekanism.multiblock.apt.APTMultiblockData;
 import fr.iglee42.evolvedmekanism.multiblock.apt.TileEntityAPTCasing;
-import mekanism.api.math.FloatingLong;
 import mekanism.client.gui.GuiMekanismTile;
 import mekanism.client.gui.element.GuiInnerScreen;
 import mekanism.client.gui.element.bar.GuiBar.IBarInfoHandler;
 import mekanism.client.gui.element.gauge.GaugeType;
+import mekanism.client.gui.element.gauge.GuiChemicalGauge;
 import mekanism.client.gui.element.gauge.GuiEnergyGauge;
-import mekanism.client.gui.element.gauge.GuiGasGauge;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
 import mekanism.common.MekanismLang;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
@@ -25,6 +21,9 @@ import net.minecraft.network.chat.Component;
 import fr.iglee42.evolvedmekanism.EvolvedMekanismLang;
 import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GuiAPT extends GuiMekanismTile<TileEntityAPTCasing, MekanismTileContainer<TileEntityAPTCasing>> {
 
@@ -39,10 +38,10 @@ public class GuiAPT extends GuiMekanismTile<TileEntityAPTCasing, MekanismTileCon
     protected void addGuiElements() {
         super.addGuiElements();
         addRenderableWidget(new GuiEnergyTab(this, ()->{
-            FloatingLong using = tile.getMultiblock().progress > 0 ? EMConfig.general.aptEnergyConsumption.getOrDefault() : FloatingLong.ZERO;
+            long using = tile.getMultiblock().progress > 0 ? EMConfig.general.aptEnergyConsumption.getOrDefault() : 0;
             return List.of(MekanismLang.USING.translate(EnergyDisplay.of(using)));
         }));
-        addRenderableWidget(new GuiGasGauge(() -> tile.getMultiblock().inputTank, () -> tile.getMultiblock().getGasTanks(null), GaugeType.STANDARD, this, 7, 17));
+        addRenderableWidget(new GuiChemicalGauge(() -> tile.getMultiblock().inputTank, () -> tile.getMultiblock().getChemicalTanks(null), GaugeType.STANDARD, this, 7, 17));
         addRenderableWidget(new GuiCustomDynamicHorizontalRateBar(this, new IBarInfoHandler() {
             @Override
             public Component getTooltip() {
@@ -69,14 +68,14 @@ public class GuiAPT extends GuiMekanismTile<TileEntityAPTCasing, MekanismTileCon
             Component speedLine = Component.translatable(EvolvedMekanismLang.GUI_SPEED.getTranslationKey()).append(Component.literal("+")).append(percentComp);
             list.add(speedLine);
             return list;
-        }).jeiCategories(EMJEI.APT));
+        }).recipeViewerCategories(JEIRecipeTypes.APT));
 
     }
 
     @Override
     protected void drawForegroundText(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
         renderTitleText(guiGraphics);
-        drawString(guiGraphics, playerInventoryTitle, inventoryLabelX, inventoryLabelY, titleTextColor());
+        renderInventoryText(guiGraphics);
         super.drawForegroundText(guiGraphics, mouseX, mouseY);
     }
 }

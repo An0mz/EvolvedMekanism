@@ -8,16 +8,14 @@ import fr.iglee42.evolvedmekanism.particles.RisingBubbleParticle;
 import fr.iglee42.evolvedmekanism.registries.*;
 import mekanism.client.ClientRegistrationUtil;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.core.registries.Registries;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.*;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.registries.RegisterEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.*;
 
-@Mod.EventBusSubscriber(modid = EvolvedMekanism.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = EvolvedMekanism.MODID, value = Dist.CLIENT)
 public class ClientRegistration {
 
     @SubscribeEvent
@@ -39,18 +37,14 @@ public class ClientRegistration {
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
-    public static void registerContainers(RegisterEvent event) {
-        event.register(Registries.MENU, helper -> {
-            ClientRegistrationUtil.registerScreen(EMContainerTypes.ALLOYER, GuiAlloyer::new);
-            ClientRegistrationUtil.registerScreen(EMContainerTypes.CHEMIXER, GuiChemixer::new);
-            ClientRegistrationUtil.registerScreen(EMContainerTypes.APT, GuiAPT::new);
-
-        });
+    public static void registerContainers(RegisterMenuScreensEvent event) {
+        ClientRegistrationUtil.registerScreen(event, EMContainerTypes.ALLOYER, GuiAlloyer::new);
+        ClientRegistrationUtil.registerScreen(event, EMContainerTypes.CHEMIXER, GuiChemixer::new);
+        ClientRegistrationUtil.registerScreen(event, EMContainerTypes.APT, GuiAPT::new);
     }
 
     @SubscribeEvent
-    public static void onStitch(TextureStitchEvent.Post event) {
-        //noinspection deprecation
+    public static void onStitch(TextureAtlasStitchedEvent event) {
         if (!event.getAtlas().location().equals(TextureAtlas.LOCATION_BLOCKS)) {
             return;
         }
