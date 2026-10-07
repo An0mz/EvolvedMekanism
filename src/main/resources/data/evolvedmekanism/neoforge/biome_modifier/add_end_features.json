@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_end",
+  "features": [
+    "evolvedmekanism:ore_uranium_buried_end",
+    "evolvedmekanism:ore_uranium_small_end"
+  ],
+  "step": "underground_ores"
+}

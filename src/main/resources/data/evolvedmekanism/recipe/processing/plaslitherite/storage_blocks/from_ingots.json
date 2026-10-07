@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": {
+      "tag": "c:ingots/plaslitherite"
+    },
+    "P": {
+      "item": "evolvedmekanism:ingot_plaslitherite"
+    }
+  },
+  "pattern": [
+    "###",
+    "#P#",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "evolvedmekanism:block_plaslitherite"
+  }
+}

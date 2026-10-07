@@ -1,0 +1,19 @@
+{
+  "type": "evolvedmekanism:chemixing",
+  "extra_input": {
+    "count": 3,
+    "item": "mekanism:hdpe_pellet"
+  },
+  "chemical_input": {
+    "amount": 100,
+    "chemical": "mekanism:lithium"
+  },
+  "main_input": {
+    "count": 1,
+    "tag": "c:dusts/netherite"
+  },
+  "output": {
+    "count": 1,
+    "id": "evolvedmekanism:dust_plaslitherite"
+  }
+}

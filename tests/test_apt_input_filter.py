@@ -27,7 +27,7 @@ class APTInputFilterTest(unittest.TestCase):
         )
         self.assertRegex(
             source,
-            r"filter\(r\s*->\s*r\.test\(inputSlot\.getStack\(\),\s*inputTank\.getStack\(\)\)\)",
+            r"filter\(r\s*->\s*r\.value\(\)\.test\(inputSlot\.getStack\(\),\s*inputTank\.getStack\(\)\)\)",
             "Processing must still require both recipe inputs",
         )
 

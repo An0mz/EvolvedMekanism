@@ -1,0 +1,16 @@
+{
+  "type": "evolvedmekanism:apt",
+  "chemical_input": {
+    "amount": 250,
+    "chemical": "mekanism:antimatter"
+  },
+  "item_input": {
+    "count": 1,
+    "item": "evolvedmekanism:supercharging_element"
+  },
+  "output": {
+    "count": 1,
+    "id": "evolvedmekanism:supercharging_element_mk2"
+  },
+  "per_tick_usage": false
+}

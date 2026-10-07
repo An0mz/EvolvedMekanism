@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": {
+      "item": "evolvedmekanism:apt_casing"
+    },
+    "C": {
+      "tag": "c:circuits/quantum"
+    }
+  },
+  "pattern": [
+    " # ",
+    "#C#",
+    " # "
+  ],
+  "result": {
+    "count": 1,
+    "id": "evolvedmekanism:apt_port"
+  }
+}

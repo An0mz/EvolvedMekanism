@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_nether",
+  "features": [
+    "evolvedmekanism:ore_uranium_buried_nether",
+    "evolvedmekanism:ore_uranium_small_nether"
+  ],
+  "step": "underground_ores"
+}

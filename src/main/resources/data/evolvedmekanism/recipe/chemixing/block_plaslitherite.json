@@ -1,0 +1,19 @@
+{
+  "type": "evolvedmekanism:chemixing",
+  "extra_input": {
+    "count": 3,
+    "item": "mekanism:hdpe_sheet"
+  },
+  "chemical_input": {
+    "amount": 900,
+    "chemical": "mekanism:lithium"
+  },
+  "main_input": {
+    "count": 1,
+    "tag": "c:storage_blocks/netherite"
+  },
+  "output": {
+    "count": 1,
+    "id": "evolvedmekanism:block_plaslitherite"
+  }
+}
