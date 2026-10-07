@@ -8,7 +8,7 @@
   "type": "evolvedmekanism:alloying",
   "extra_input": {
     "count": 1,
-    "tag": "c:ingots/copper_alloy"
+    "tag": "c:ingots/copper"
   },
   "second_extra_input": {
     "count": 1,
