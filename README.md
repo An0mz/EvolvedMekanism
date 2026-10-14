@@ -1,4 +1,4 @@
-# Evolved Mekanism APT Only
+# Evolved Mekanism APT Only Neo
 
 ## 📖 Description
 
