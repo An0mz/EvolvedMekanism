@@ -10,18 +10,12 @@ First release of Evolved Mekanism APT Only Neo, the NeoForge 1.21.1 port of Evol
 Needs Mekanism 10.7 and Iglee Lib 1.2.
 
 ### Added
-- **Everything from the 1.20.1 version, now on NeoForge 1.21.1:** the APT, Better Gold,
-  Plaslitherite, Refined Redstone, Netherrack and End Stone Uranium Ore, alloys and alloy blocks,
-  circuits, the Alloyer, the Chemixer and the Supercharging Elements.
-- **Alloying factories** still work with Mekanism 10.7's factory changes and can be upgraded with
-  tier installers.
-- **Mekanism Extras support:** Absolute to Infinite alloying factories and the creative upgrade,
-  when Mekanism Extras is installed.
-- **Alloyer recipes for other mods** load when those mods are installed: AE2 processors and fluix
-  crystals, Ender IO alloys, and Thermal and Thermal Endergy alloys. The Ender IO recipes use
-  Ender IO 1.21.1's items.
+- **Everything from the 1.20.1 version, now on NeoForge 1.21.1:** the APT, Better Gold, Plaslitherite, Refined Redstone, Netherrack and End Stone Uranium Ore, alloys and alloy blocks, circuits, the Alloyer, the Chemixer and the Supercharging Elements.
+- **Alloying factories** still work with Mekanism 10.7's factory changes and can be upgraded with tier installers.
+- **Mekanism Extras support:** Absolute to Infinite alloying factories and the creative upgrade, when Mekanism Extras is installed.
+- **Alloyer recipes for other mods** load when those mods are installed: AE2 processors and fluix crystals, and Ender IO alloy.
 - **JEI** shows the Alloyer, Chemixer and APT recipes.
 
 ### Changed
-- **The APT, Alloyer and Chemixer use Mekanism 10.7's chemicals.** Gases, infuse types, pigments
-  and slurries are now all chemicals, like in Mekanism itself.
+- **The APT, Alloyer and Chemixer use Mekanism 10.7's chemicals.** Gases, infuse types, pigments and slurries are now all chemicals, like in Mekanism itself.
+
