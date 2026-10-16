@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on "Keep a Changelog" and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.21.1-1.3.0] - 2026-10-16
+
+### Fixed
+- **Addons made for Evolved Mekanism 1.2+ (like More Thermal Evaporation) failing to load.** The version went back to 1.0.0 with the CurseForge rename, so their version check failed. It now continues from the 1.20.1 versions.
+
 ## [1.21.1-1.0.0] - 2026-10-14
 
 First release of Evolved Mekanism APT Only Neo, the NeoForge 1.21.1 port of Evolved Mekanism APT Only.
