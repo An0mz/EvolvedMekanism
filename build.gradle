@@ -86,6 +86,9 @@ dependencies {
     //Optional: Absolute+ alloying factories are only registered when Mekanism Extras is present
     compileOnly "curse.maven:mekanism-extras-1026040:8677677"
 
+    //Optional: Mekanism: MoreMachine is told Evolved Mekanism isn't installed, since this fork has no EM factory tiers for it
+    compileOnly "curse.maven:mekanism-moremachine-1275257:8724947"
+
     runtimeOnly "curse.maven:ctm-267602:5587515"
     runtimeOnly "curse.maven:SolarFluxReborn-246974:6776635"
     runtimeOnly "curse.maven:HammerLib-247401:8968713"

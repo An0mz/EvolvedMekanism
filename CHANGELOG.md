@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on "Keep a Changelog" and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.21.1-1.3.1] - 2026-10-16
+
+### Fixed
+- **Crash on startup with Mekanism: MoreMachine.** MoreMachine tried to add factories for Evolved Mekanism tiers this version doesn't have, which broke mod loading. Its Evolved Mekanism support is now turned off.
+
 ## [1.21.1-1.3.0] - 2026-10-16
 
 ### Fixed

@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.iglee42.evolvedmekanism.mixins.mekmm",
+  "plugin": "fr.iglee42.evolvedmekanism.mixins.mekmm.MekmmMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MoreMachineHooksMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
