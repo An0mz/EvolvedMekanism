@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on "Keep a Changelog" and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.21.1-1.3.2] - 2026-10-17
+
+### Fixed
+- **Hundreds of errors in the log with Mekanism: MoreMachine.** MoreMachine still loaded its recipes and loot tables for the Evolved Mekanism factories that 1.3.1 turned off, and they all failed. They are now skipped.
+
 ## [1.21.1-1.3.1] - 2026-10-16
 
 ### Fixed

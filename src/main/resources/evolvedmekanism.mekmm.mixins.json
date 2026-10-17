@@ -5,7 +5,8 @@
   "plugin": "fr.iglee42.evolvedmekanism.mixins.mekmm.MekmmMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "MoreMachineHooksMixin"
+    "MoreMachineHooksMixin",
+    "SimpleJsonResourceReloadListenerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
