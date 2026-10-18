@@ -15,6 +15,9 @@
   - Alloyer
   - Chemixer
 
+## 📚 Documentation
+See the [docs](docs/README.md) for how to build the APT, the machines, and every material and recipe.
+
 ## 📜 Original Mod Author
 > [Original Mod](https://www.curseforge.com/minecraft/mc-mods/evolved-mekanism)
 > Author: [Original Author](https://www.curseforge.com/members/iglee42/projects)
