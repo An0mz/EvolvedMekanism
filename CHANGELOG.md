@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on "Keep a Changelog" and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.21.1-1.3.4] - 2026-11-12
+
+### Added
+- Added 6 missing recipes
+
 ## [1.21.1-1.3.2] - 2026-10-17
 
 ### Fixed
